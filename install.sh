@@ -50,38 +50,52 @@ cat > "$HOME/.config/picom/picom.conf" << 'EOF'
 backend = "glx";
 vsync = true;
 
-# Shadows
+# Shadows — matching Hyprland: range=12, render_power=3, color=0xee1a1a2e
 shadow = true;
 shadow-radius = 12;
 shadow-offset-x = -6;
 shadow-offset-y = -6;
-shadow-opacity = 0.5;
-shadow-exclude = [ "class_g = 'awesome'" ];
+shadow-opacity = 0.6;
+shadow-color = "#1a1a2e";
+shadow-exclude = [
+  "class_g = 'awesome'",
+  "window_type = 'dock'",
+  "window_type = 'desktop'",
+];
 
-# Fading
+# Fading — matching Hyprland animations (speed 5, smooth bezier)
 fading = true;
-fade-in-step  = 0.05;
-fade-out-step = 0.05;
-fade-delta = 5;
+fade-in-step  = 0.06;
+fade-out-step = 0.06;
+fade-delta = 4;
 
-# Transparency
-inactive-opacity = 0.92;
+# Opacity — matching Hyprland: active=1.0, inactive=0.95
+inactive-opacity = 0.95;
 active-opacity   = 1.0;
 opacity-rule = [
   "100:class_g = 'firefox'",
   "100:class_g = 'mpv'",
+  "100:class_g = 'Alacritty' && focused",
 ];
+inactive-opacity-override = false;
 
-# Rounded corners
-corner-radius = 8;
+# Rounded corners — matching Hyprland decoration.rounding = 4
+corner-radius = 4;
 rounded-corners-exclude = [
   "window_type = 'dock'",
   "window_type = 'desktop'",
 ];
 
-# Blur (requires picom-git / jonaburg fork)
-# blur-method = "dual_kawase";
-# blur-strength = 5;
+# Blur — matching Hyprland: size=4, passes=2
+# Requires picom-git (jonaburg/pijulius fork)
+blur-method = "dual_kawase";
+blur-strength = 4;
+blur-background = true;
+blur-background-exclude = [
+  "window_type = 'dock'",
+  "window_type = 'desktop'",
+  "class_g = 'slop'",
+];
 EOF
 
 echo ""

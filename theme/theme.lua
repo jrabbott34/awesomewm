@@ -37,9 +37,9 @@ local cp = {
 }
 theme.cp = cp  -- export so widgets can use it
 
--- ── Fonts ─────────────────────────────────────────────────────────────────────
-theme.font          = "JetBrainsMono Nerd Font 10"
-theme.font_bold     = "JetBrainsMono Nerd Font Bold 10"
+-- ── Fonts — matching misc.font_family = "FiraCode Nerd Font" ────────────────
+theme.font          = "FiraCode Nerd Font 10"
+theme.font_bold     = "FiraCode Nerd Font Bold 10"
 
 -- ── Core colours ─────────────────────────────────────────────────────────────
 theme.bg_normal     = cp.base
@@ -53,14 +53,16 @@ theme.fg_focus      = cp.text
 theme.fg_urgent     = cp.base
 theme.fg_minimize   = cp.overlay1
 
--- ── Borders ───────────────────────────────────────────────────────────────────
+-- ── Borders — border_size = 2, inactive = surface0, active = blue→mauve ──────
+-- Awesome doesn't support gradient borders natively; mauve is the midpoint
+-- of Hyprland's rgba(89b4faee)→rgba(cba6f7ee) gradient (blue→mauve).
 theme.border_width  = dpi(2)
-theme.border_normal = cp.surface0
-theme.border_focus  = cp.mauve
+theme.border_normal = cp.surface0   -- rgba(45475aaa) ≈ surface0
+theme.border_focus  = cp.mauve      -- closest single-colour to the blue→mauve gradient
 theme.border_marked = cp.peach
 
--- ── Gaps ──────────────────────────────────────────────────────────────────────
-theme.useless_gap   = dpi(6)
+-- ── Gaps — gaps_in = 2, gaps_out = 2 from Hyprland ──────────────────────────
+theme.useless_gap   = dpi(2)
 
 -- ── Wibar ─────────────────────────────────────────────────────────────────────
 theme.wibar_bg      = cp.mantle
@@ -100,7 +102,7 @@ theme.notification_bg       = cp.surface0
 theme.notification_fg       = cp.text
 theme.notification_border_color = cp.mauve
 theme.notification_border_width = dpi(2)
-theme.notification_font     = "JetBrainsMono Nerd Font 10"
+theme.notification_font     = "FiraCode Nerd Font 10"
 theme.notification_margin   = dpi(12)
 theme.notification_icon_size = dpi(48)
 
@@ -122,8 +124,8 @@ theme.hotkeys_border_color   = cp.mauve
 theme.hotkeys_modifiers_fg   = cp.mauve
 theme.hotkeys_label_bg       = cp.surface0
 theme.hotkeys_label_fg       = cp.text
-theme.hotkeys_font           = "JetBrainsMono Nerd Font 10"
-theme.hotkeys_description_font = "JetBrainsMono Nerd Font 9"
+theme.hotkeys_font           = "FiraCode Nerd Font 10"
+theme.hotkeys_description_font = "FiraCode Nerd Font 9"
 theme.hotkeys_group_margin   = dpi(6)
 
 -- ── Layoutbox icons (generated) ───────────────────────────────────────────────
