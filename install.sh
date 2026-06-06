@@ -51,12 +51,9 @@ echo "==> [Phase 2] Installing Awesome WM and supporting packages..."
 
 sudo pacman -S --needed --noconfirm \
   awesome \
-  picom \
   rofi \
-  nitrogen \
   feh \
   xwallpaper \
-  xautolock \
   network-manager-applet \
   blueman \
   pasystray \
@@ -95,6 +92,7 @@ $AUR_HELPER -S --needed --noconfirm \
   vicious \
   lain \
   picom-git \
+  xautolock \
   sddm-catppuccin-git
 
 # ── Dotfiles ──────────────────────────────────────────────────────────────────
