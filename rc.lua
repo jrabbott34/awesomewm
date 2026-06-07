@@ -44,9 +44,8 @@ end
 -- ── Theme ─────────────────────────────────────────────────────────────────────
 dbg("loading theme")
 beautiful.init(gears.filesystem.get_configuration_dir() .. "theme/theme.lua")
-local cp = beautiful.cp
-dbg("cp is: " .. tostring(cp))
-if not cp then cp = { base="#1e1e2e", mantle="#181825", surface0="#313244", surface1="#45475a", surface2="#585b70", text="#cdd6f4", lavender="#b4befe", blue="#89b4fa", mauve="#cba6f7", peach="#fab387", red="#f38ba8", green="#a6e3a1", yellow="#f9e2af", sky="#89dceb", overlay0="#6c7086", overlay1="#7f849c", subtext1="#bac2de" } end
+local cp = require("theme.colors")
+dbg("cp loaded ok")
 
 -- ── Layouts ───────────────────────────────────────────────────────────────────
 awful.layout.layouts = {

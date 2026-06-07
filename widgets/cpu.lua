@@ -1,8 +1,7 @@
 -- CPU usage widget — reads /proc/stat, no vicious dependency
-local wibox     = require("wibox")
-local gears     = require("gears")
-local beautiful = require("beautiful")
-local cp        = beautiful.cp
+local wibox = require("wibox")
+local gears = require("gears")
+local cp    = require("theme.colors")
 
 local cpu_widget = wibox.widget {
   widget = wibox.widget.textbox,

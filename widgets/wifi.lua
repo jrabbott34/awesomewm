@@ -2,8 +2,7 @@
 local wibox   = require("wibox")
 local awful   = require("awful")
 local gears   = require("gears")
-local beautiful = require("beautiful")
-local cp = beautiful.cp
+local cp = require("theme.colors")
 
 local wifi_widget = wibox.widget {
   widget = wibox.widget.textbox,
