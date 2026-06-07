@@ -51,6 +51,7 @@ echo "==> [Phase 2] Installing Awesome WM and supporting packages..."
 
 sudo pacman -S --needed --noconfirm \
   awesome \
+  picom \
   rofi \
   feh \
   xwallpaper \
@@ -88,10 +89,12 @@ if [ -z "$AUR_HELPER" ]; then
   AUR_HELPER="yay"
 fi
 
+# Remove picom-git if it was previously installed (conflicts with stable picom)
+sudo pacman -Rdd --noconfirm picom-git 2>/dev/null || true
+
 $AUR_HELPER -S --needed --noconfirm \
   vicious \
   lain \
-  picom-git \
   xautolock \
   sddm-catppuccin-git
 
