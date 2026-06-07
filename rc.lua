@@ -116,7 +116,7 @@ local globalkeys = gears.table.join(
 
   -- Launchers
   awful.key({ mod }, "Return", function() awful.spawn("alacritty")           end),
-  awful.key({ mod }, "space",  function() awful.spawn("wofi --show drun")    end),
+  awful.key({ mod }, "space",  function() awful.spawn("rofi -show drun")    end),
   awful.key({ mod }, "e",      function() awful.spawn("thunar")              end),
   awful.key({ mod }, "b",      function() awful.spawn("firefox")             end),
   awful.key({ mod }, "l",      function() awful.spawn("hyprlock")            end),
