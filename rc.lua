@@ -1,33 +1,46 @@
--- AwesomeWM rc.lua — Catppuccin Mocha, modular, Hyprland/Sway parity
--- Requires: awesome-git or >=4.3, vicious, lain (AUR), rofi, picom
+-- AwesomeWM rc.lua — Catppuccin Mocha, Awesome 4.3 compatible
 pcall(require, "luarocks.loader")
 
 -- ── Core libraries ────────────────────────────────────────────────────────────
-local gears   = require("gears")
-local awful   = require("awful")
-              require("awful.autofocus")
-local wibox   = require("wibox")
+local gears     = require("gears")
+local awful     = require("awful")
+                  require("awful.autofocus")
+local wibox     = require("wibox")
 local beautiful = require("beautiful")
-local naughty = require("naughty")
-local menubar = require("menubar")
-local hotkeys = require("awful.hotkeys_popup")
-              require("awful.hotkeys_popup.keys")
+local naughty   = require("naughty")
+local hotkeys   = require("awful.hotkeys_popup")
+                  require("awful.hotkeys_popup.keys")
 
--- ── Error handling ────────────────────────────────────────────────────────────
-naughty.connect_signal("request::display_error", function(message, startup)
-  naughty.notification {
-    urgency = "critical",
-    title   = startup and "Startup error!" or "Runtime error!",
-    message = message,
-  }
-end)
+-- ── Error handling (4.3 API) ──────────────────────────────────────────────────
+if awesome.startup_errors then
+  naughty.notify({
+    preset = naughty.config.presets.critical,
+    title  = "Startup error",
+    text   = awesome.startup_errors,
+  })
+end
+
+do
+  local in_error = false
+  awesome.connect_signal("debug::error", function(err)
+    if in_error then return end
+    in_error = true
+    naughty.notify({
+      preset = naughty.config.presets.critical,
+      title  = "Runtime error",
+      text   = tostring(err),
+    })
+    in_error = false
+  end)
+end
 
 -- ── Theme ─────────────────────────────────────────────────────────────────────
 beautiful.init(gears.filesystem.get_configuration_dir() .. "theme/theme.lua")
+local cp = beautiful.cp
 
 -- ── Layouts ───────────────────────────────────────────────────────────────────
 awful.layout.layouts = {
-  awful.layout.suit.tile,            -- [1] primary: like Hyprland dwindle master
+  awful.layout.suit.tile,
   awful.layout.suit.tile.left,
   awful.layout.suit.tile.bottom,
   awful.layout.suit.fair,
@@ -37,19 +50,20 @@ awful.layout.layouts = {
   awful.layout.suit.floating,
 }
 
+-- ── Keybindings (load early — needed by root.buttons + rules) ────────────────
+local keys = require("keys.keybindings")
+
 -- ── Menu ──────────────────────────────────────────────────────────────────────
-local mymainmenu = awful.menu {
+local mymainmenu = awful.menu({
   items = {
-    { "hotkeys",     function() hotkeys.show_help(nil, awful.screen.focused()) end },
-    { "terminal",    os.getenv("TERMINAL") or "kitty" },
-    { "restart",     awesome.restart },
-    { "quit",        function() awesome.quit() end },
+    { "hotkeys",  function() hotkeys.show_help(nil, awful.screen.focused()) end },
+    { "terminal", "alacritty" },
+    { "restart",  awesome.restart },
+    { "quit",     function() awesome.quit() end },
   }
-}
+})
 
 -- ── Wibar helpers ─────────────────────────────────────────────────────────────
-local cp = beautiful.cp
-
 local function sep(color)
   return wibox.widget {
     markup = '<span foreground="' .. (color or cp.surface1) .. '">  │  </span>',
@@ -60,15 +74,15 @@ end
 local function pad(n)
   return wibox.widget {
     forced_width = n or 8,
-    widget = wibox.widget.separator,
-    opacity = 0,
+    widget       = wibox.widget.separator,
+    opacity      = 0,
   }
 end
 
--- ── Load custom widgets ───────────────────────────────────────────────────────
+-- ── Widgets ───────────────────────────────────────────────────────────────────
 local W = require("widgets")
 
--- ── Clock + date widget ───────────────────────────────────────────────────────
+-- Clock + date
 local clock_widget = wibox.widget {
   format = '<span foreground="' .. cp.lavender .. '">󱑂 %H:%M</span>',
   widget = wibox.widget.textclock,
@@ -78,36 +92,42 @@ local date_widget = wibox.widget {
   widget = wibox.widget.textclock,
 }
 
--- ── Taglist + tasklist button bindings ───────────────────────────────────────
+-- ── Taglist buttons ───────────────────────────────────────────────────────────
 local taglist_buttons = gears.table.join(
-  awful.button({},     1, function(t) t:view_only() end),
-  awful.button({ "Mod4" }, 1, function(t)
+  awful.button({},        1, function(t) t:view_only() end),
+  awful.button({ "Mod4"}, 1, function(t)
     if client.focus then client.focus:move_to_tag(t) end
   end),
-  awful.button({}, 3, awful.tag.viewtoggle),
-  awful.button({ "Mod4" }, 3, function(t)
+  awful.button({},        3, awful.tag.viewtoggle),
+  awful.button({ "Mod4"}, 3, function(t)
     if client.focus then client.focus:toggle_tag(t) end
   end),
   awful.button({}, 4, function(t) awful.tag.viewnext(t.screen) end),
   awful.button({}, 5, function(t) awful.tag.viewprev(t.screen) end)
 )
 
+-- ── Tasklist buttons ──────────────────────────────────────────────────────────
 local tasklist_buttons = gears.table.join(
   awful.button({}, 1, function(c)
     if c == client.focus then
       c.minimized = true
     else
-      c:emit_signal("request::activate", "tasklist", { raise = true })
+      c.minimized = false
+      if not c:isvisible() then
+        awful.tag.viewonly(c:tags()[1])
+      end
+      client.focus = c
+      c:raise()
     end
   end),
   awful.button({}, 3, function()
-    awful.menu.client_list { theme = { width = 250 } }
+    awful.menu.client_list({ theme = { width = 250 } })
   end),
   awful.button({}, 4, function() awful.client.focus.byidx(1) end),
   awful.button({}, 5, function() awful.client.focus.byidx(-1) end)
 )
 
--- ── Screen setup ─────────────────────────────────────────────────────────────
+-- ── Wallpaper ─────────────────────────────────────────────────────────────────
 local function set_wallpaper(s)
   if beautiful.wallpaper then
     local wp = type(beautiful.wallpaper) == "function"
@@ -118,94 +138,51 @@ local function set_wallpaper(s)
   end
 end
 
--- Tag names (Nerd Font icons)
-local tag_names = { "󰣇", "󰈹", "󰭹", "󰙨", "󰎆", "󰏘", "󰃲", "󰋊", "󰿎" }
---                   1=dev 2=web 3=chat 4=git 5=music 6=art 7=cal 8=files 9=mail
+screen.connect_signal("property::geometry", set_wallpaper)
 
+-- ── Tag names ─────────────────────────────────────────────────────────────────
+local tag_names = { "󰣇", "󰈹", "󰭹", "󰙨", "󰎆", "󰏘", "󰃲", "󰋊", "󰿎" }
+
+-- ── Per-screen setup ──────────────────────────────────────────────────────────
 awful.screen.connect_for_each_screen(function(s)
   set_wallpaper(s)
 
-  -- Tags with default tiling layout + gap applied via beautiful
   awful.tag(tag_names, s, awful.layout.layouts[1])
 
-  -- Prompt box (for legacy awesome prompts, mostly unused with rofi)
   s.mypromptbox = awful.widget.prompt()
 
-  -- Layout indicator
-  s.mylayoutbox = awful.widget.layoutbox {
-    screen  = s,
-    buttons = gears.table.join(
-      awful.button({}, 1, function() awful.layout.inc(1)  end),
-      awful.button({}, 3, function() awful.layout.inc(-1) end),
-      awful.button({}, 4, function() awful.layout.inc(1)  end),
-      awful.button({}, 5, function() awful.layout.inc(-1) end)
-    )
-  }
+  -- layoutbox: 4.3 takes screen directly
+  s.mylayoutbox = awful.widget.layoutbox(s)
+  s.mylayoutbox:buttons(gears.table.join(
+    awful.button({}, 1, function() awful.layout.inc( 1) end),
+    awful.button({}, 3, function() awful.layout.inc(-1) end),
+    awful.button({}, 4, function() awful.layout.inc( 1) end),
+    awful.button({}, 5, function() awful.layout.inc(-1) end)
+  ))
 
   -- Taglist
-  s.mytaglist = awful.widget.taglist {
-    screen  = s,
-    filter  = awful.widget.taglist.filter.all,
-    buttons = taglist_buttons,
-    style   = { shape = gears.shape.rounded_rect },
-    widget_template = {
-      {
-        {
-          id     = "text_role",
-          widget = wibox.widget.textbox,
-        },
-        left   = 8, right = 8,
-        widget = wibox.container.margin,
-      },
-      id     = "background_role",
-      widget = wibox.container.background,
-    },
-  }
+  s.mytaglist = awful.widget.taglist(
+    s,
+    awful.widget.taglist.filter.all,
+    taglist_buttons
+  )
 
   -- Tasklist
-  s.mytasklist = awful.widget.tasklist {
-    screen  = s,
-    filter  = awful.widget.tasklist.filter.currenttags,
-    buttons = tasklist_buttons,
-    style   = {
-      shape        = gears.shape.rounded_rect,
-      shape_border_width = 0,
-    },
-    layout = {
-      spacing = 4,
-      layout  = wibox.layout.flex.horizontal,
-    },
-    widget_template = {
-      {
-        {
-          {
-            id     = "icon_role",
-            widget = wibox.widget.imagebox,
-          },
-          margins = 4,
-          widget  = wibox.container.margin,
-        },
-        {
-          id     = "text_role",
-          widget = wibox.widget.textbox,
-        },
-        layout = wibox.layout.fixed.horizontal,
-      },
-      left   = 6, right = 6,
-      widget = wibox.container.margin,
-    },
-  }
+  s.mytasklist = awful.widget.tasklist(
+    s,
+    awful.widget.tasklist.filter.currenttags,
+    tasklist_buttons
+  )
 
-  -- ── Wibar ──────────────────────────────────────────────────────────────────
-  s.mywibar = awful.wibar {
+  -- ── Wibar ────────────────────────────────────────────────────────────────────
+  s.mywibar = awful.wibar({
     position = "top",
     screen   = s,
     height   = beautiful.wibar_height,
     bg       = beautiful.wibar_bg,
     fg       = beautiful.wibar_fg,
-  }
+  })
 
-  -- Rounded pill container helper
   local function pill(widget, bg_color)
     return wibox.widget {
       {
@@ -219,18 +196,16 @@ awful.screen.connect_for_each_screen(function(s)
     }
   end
 
-  s.mywibar:setup {
+  s.mywibar:setup({
     layout = wibox.layout.align.horizontal,
-    expand = "none",
 
-    -- ── Left: launcher icon + tags ──────────────────────────────────────────
+    -- Left
     {
       layout = wibox.layout.fixed.horizontal,
       pad(6),
-      -- Logo / menu button
       {
         {
-          markup = '<span foreground="' .. cp.mauve .. '">  </span>',
+          markup  = '<span foreground="' .. cp.mauve .. '">  </span>',
           buttons = gears.table.join(
             awful.button({}, 1, function() mymainmenu:toggle() end)
           ),
@@ -245,137 +220,92 @@ awful.screen.connect_for_each_screen(function(s)
       s.mypromptbox,
     },
 
-    -- ── Center: tasklist ────────────────────────────────────────────────────
+    -- Center
     s.mytasklist,
 
-    -- ── Right: system widgets ───────────────────────────────────────────────
+    -- Right
     {
       layout = wibox.layout.fixed.horizontal,
-      -- BTC
-      pill(W.btc, cp.surface0),
-      pad(4),
-      -- WiFi
-      pill(W.wifi, cp.surface0),
-      pad(4),
-      -- Volume
-      pill(W.volume, cp.surface0),
-      pad(4),
-      -- Battery (hidden on desktops via widget returning "")
-      pill(W.battery, cp.surface0),
-      pad(4),
-      -- CPU
-      pill(W.cpu, cp.surface0),
-      pad(4),
-      -- RAM
-      pill(W.ram, cp.surface0),
+      pill(W.btc,     cp.surface0), pad(4),
+      pill(W.wifi,    cp.surface0), pad(4),
+      pill(W.volume,  cp.surface0), pad(4),
+      pill(W.battery, cp.surface0), pad(4),
+      pill(W.cpu,     cp.surface0), pad(4),
+      pill(W.ram,     cp.surface0),
       sep(),
-      -- Date
-      date_widget,
-      pad(4),
-      -- Clock
-      clock_widget,
-      pad(6),
-      -- System tray
+      date_widget, pad(4),
+      clock_widget, pad(6),
       {
         wibox.widget.systray(),
         top = 4, bottom = 4, left = 4, right = 4,
         widget = wibox.container.margin,
       },
       pad(4),
-      -- Layout box
       s.mylayoutbox,
       pad(6),
     },
-  }
+  })
 end)
 
--- ── Mouse bindings (root window) ─────────────────────────────────────────────
--- Root buttons from keybindings (includes Super+scroll workspace switching)
+-- ── Root mouse + keys ─────────────────────────────────────────────────────────
 root.buttons(keys.root_buttons)
-
--- ── Load modular configs ──────────────────────────────────────────────────────
-local keys = require("keys.keybindings")
 root.keys(keys.global)
 
+-- ── Rules + autostart ────────────────────────────────────────────────────────
 require("rules.rules")
 require("autostart")
 
 -- ── Signals ───────────────────────────────────────────────────────────────────
 
--- Titlebar signal
+-- Titlebars
 client.connect_signal("request::titlebars", function(c)
   local buttons = gears.table.join(
     awful.button({}, 1, function()
-      c:emit_signal("request::activate", "titlebar", { raise = true })
+      client.focus = c
+      c:raise()
       awful.mouse.client.move(c)
     end),
     awful.button({}, 3, function()
-      c:emit_signal("request::activate", "titlebar", { raise = true })
+      client.focus = c
+      c:raise()
       awful.mouse.client.resize(c)
     end)
   )
 
   awful.titlebar(c, {
-    size = beautiful.titlebar_height,
+    size     = beautiful.titlebar_height,
     bg_normal = beautiful.titlebar_bg_normal,
     bg_focus  = beautiful.titlebar_bg_focus,
-  }):setup {
-    {
-      -- Left: icon
-      awful.titlebar.widget.iconwidget(c),
-      buttons = buttons,
-      layout  = wibox.layout.fixed.horizontal,
-    },
-    {
-      -- Middle: title
-      {
-        align  = "center",
-        widget = awful.titlebar.widget.titlewidget(c),
-      },
-      buttons = buttons,
-      layout  = wibox.layout.flex.horizontal,
-    },
-    {
-      -- Right: buttons
-      awful.titlebar.widget.minimizebutton(c),
-      awful.titlebar.widget.maximizedbutton(c),
-      awful.titlebar.widget.closebutton(c),
-      layout = wibox.layout.fixed.horizontal,
-    },
+  }):setup({
+    { awful.titlebar.widget.iconwidget(c), buttons = buttons, layout = wibox.layout.fixed.horizontal },
+    { { align = "center", widget = awful.titlebar.widget.titlewidget(c) }, buttons = buttons, layout = wibox.layout.flex.horizontal },
+    { awful.titlebar.widget.minimizebutton(c), awful.titlebar.widget.maximizedbutton(c), awful.titlebar.widget.closebutton(c), layout = wibox.layout.fixed.horizontal },
     layout = wibox.layout.align.horizontal,
-  }
+  })
 end)
 
--- Auto-hide titlebars for tiled (non-floating) windows
+-- Auto-hide titlebars on tiled windows
 client.connect_signal("property::floating", function(c)
-  if c.floating then
-    awful.titlebar.show(c)
-  else
-    awful.titlebar.hide(c)
-  end
+  if c.floating then awful.titlebar.show(c)
+  else               awful.titlebar.hide(c) end
 end)
 
--- Focus/unfocus border colour
+-- Border colours
 client.connect_signal("focus",   function(c) c.border_color = beautiful.border_focus  end)
 client.connect_signal("unfocus", function(c) c.border_color = beautiful.border_normal end)
 
--- Sloppy focus (hover to focus) — comment out if you prefer click-to-focus
+-- Hover-to-focus (sloppy focus)
 client.connect_signal("mouse::enter", function(c)
-  c:emit_signal("request::activate", "mouse_enter", { raise = false })
+  if awful.layout.get(c.screen) ~= awful.layout.suit.magnifier
+    and awful.client.focus.filter(c) then
+    client.focus = c
+  end
 end)
 
--- Wallpaper refresh on display change
-screen.connect_signal("property::geometry", function(s)
-  set_wallpaper(s)
-end)
-
--- Re-apply gaps after tag changes
+-- Re-apply titlebar state after layout change
 tag.connect_signal("property::layout", function(t)
   for _, c in ipairs(t:clients()) do
-    if c.floating then
-      awful.titlebar.show(c)
-    else
-      awful.titlebar.hide(c)
-    end
+    if c.floating then awful.titlebar.show(c)
+    else               awful.titlebar.hide(c) end
   end
 end)
