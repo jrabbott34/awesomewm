@@ -80,7 +80,20 @@ local function pad(n)
 end
 
 -- ── Widgets ───────────────────────────────────────────────────────────────────
-local W = require("widgets")
+local W
+local ok, err = pcall(function() W = require("widgets") end)
+if not ok then
+  naughty.notify({
+    preset  = naughty.config.presets.critical,
+    title   = "Widget load error",
+    text    = tostring(err),
+    timeout = 0,
+  })
+  -- Fallback empty widgets so the rest of rc.lua doesn't crash
+  W = { cpu=wibox.widget.textbox(), ram=wibox.widget.textbox(),
+        volume=wibox.widget.textbox(), wifi=wibox.widget.textbox(),
+        battery=wibox.widget.textbox(), btc=wibox.widget.textbox() }
+end
 
 -- Clock + date
 local clock_widget = wibox.widget {
